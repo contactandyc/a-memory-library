@@ -9,13 +9,12 @@ set(CMAKE_INSTALL_BINDIR bin)
 set(CMAKE_INSTALL_DOCDIR share/doc/amemorylibrary)
 set(CMAKE_C_STANDARD 99)
 
-
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR}/include")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${CMAKE_SOURCE_DIR}/include")
 
 if(ADDRESS_SANITIZER)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 endif()
 
 # Install README, AUTHORS, etc.
@@ -40,32 +39,33 @@ add_library(amemorylibrary_static STATIC ${SOURCE_FILES})
 set_target_properties(amemorylibrary_static PROPERTIES OUTPUT_NAME "amemorylibrary_static")
 target_compile_options(amemorylibrary_static PRIVATE -O3)
 
-# Release library
+# Shared library
 add_library(amemorylibrary SHARED ${SOURCE_FILES})
 set_target_properties(amemorylibrary PROPERTIES OUTPUT_NAME "amemorylibrary")
 target_compile_options(amemorylibrary PRIVATE -O3)
 
+# Export targets
+install(TARGETS amemorylibrary amemorylibrary_static amemorylibrary_debug
+        EXPORT amemorylibraryTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        PUBLIC_HEADER DESTINATION include)
 
-install(TARGETS amemorylibrary
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  PUBLIC_HEADER DESTINATION include
-)
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "amemorylibraryConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
 
-install(TARGETS amemorylibrary_static
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  PUBLIC_HEADER DESTINATION include
-)
+install(EXPORT amemorylibraryTargets
+        FILE amemorylibraryTargets.cmake
+        DESTINATION lib/cmake/amemorylibrary)
 
-install(TARGETS amemorylibrary_debug
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  PUBLIC_HEADER DESTINATION include
-)
+configure_file(amemorylibraryConfig.cmake.in amemorylibraryConfig.cmake @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/amemorylibraryConfig.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/amemorylibraryConfigVersion.cmake"
+        DESTINATION lib/cmake/amemorylibrary)
 
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/bin/cmake_uninstall.cmake.in"
