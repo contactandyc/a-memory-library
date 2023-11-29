@@ -1,5 +1,23 @@
 # A memory library
 
+## Installation
+
+### Clone the library and change to the directory
+
+```bash
+git clone https://github.com/contactandyc/a-memory-library.git
+cd a-memory-library
+```
+
+### Build and install library
+
+```bash
+mkdir -p build
+cd build
+cmake ..
+make
+make install
+```
 
 # Overview of A Memory Library (AML)
 
