@@ -52,7 +52,7 @@ typedef struct aml_buffer_s aml_buffer_t;
 */
 #ifdef _AML_DEBUG_
 #define aml_buffer_init(size)                                                   \
-  _aml_buffer_init(size, AC_FILE_LINE_MACRO("aml_buffer"));
+  _aml_buffer_init(size, aml_file_line_func("aml_buffer"));
 aml_buffer_t *_aml_buffer_init(size_t size, const char *caller);
 #else
 #define aml_buffer_init(size) _aml_buffer_init(size)
