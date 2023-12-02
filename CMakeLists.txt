@@ -31,9 +31,9 @@ target_compile_options(amemorylibrary PRIVATE -O3)
 target_include_directories(amemorylibrary PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-set_target_properties(amemorylibrary PROPERTIES
-    PUBLIC_HEADER "include/a-memory-library/aml_alloc.h;include/a-memory-library/aml_buffer.h;include/a-memory-library/aml_pool.h"
-    OUTPUT_NAME "amemorylibrary")
+#set_target_properties(amemorylibrary PROPERTIES
+#    PUBLIC_HEADER "include/a-memory-library/aml_alloc.h;include/a-memory-library/aml_buffer.h;include/a-memory-library/aml_pool.h;include/a-memory-library/impl/aml_buffer.h;include/a-memory-library/impl/aml_pool.h"
+#    OUTPUT_NAME "amemorylibrary")
 
 # Debug library
 add_library(amemorylibrary_debug STATIC ${SOURCE_FILES})
@@ -58,7 +58,11 @@ install(TARGETS amemorylibrary amemorylibrary_debug amemorylibrary_static
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/a-memory-library)
+        PUBLIC_HEADER DESTINATION include)
+
+# Install header files
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/a-memory-library
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Export the targets
 install(EXPORT amemorylibraryTargets

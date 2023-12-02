@@ -195,3 +195,43 @@ static inline char *aml_pool_strdupf(aml_pool_t *pool, const char *fmt, ...) {
 }
 
 char **_aml_pool_split(aml_pool_t *h, size_t *num_splits, char delim, char *s);
+
+struct aml_pool_marker_s {
+  aml_pool_node_t *prev;
+  char *curp;
+  size_t size;
+  size_t used;
+#ifdef _AML_DEBUG_
+  size_t cur_size;
+#endif
+};
+
+static inline void aml_pool_save(aml_pool_t *h, aml_pool_marker_t *m) {
+  m->prev = h->current->prev;
+  m->curp = h->curp;
+  m->size = h->size;
+  m->used = h->used;
+#ifdef _AML_DEBUG_
+  m->cur_size = h->cur_size;
+#endif
+}
+
+static inline void aml_pool_restore(aml_pool_t *h, aml_pool_marker_t *m) {
+  /* remove the extra blocks (the ones where prev != NULL) */
+  aml_pool_node_t *prev = h->current->prev;
+  while (prev != m->prev) {
+    if(!h->pool)
+      aml_free(h->current);
+    h->current = prev;
+    prev = prev->prev;
+  }
+
+  /* reset to marker */
+  h->curp = m->curp;
+  h->size = m->size;
+
+#ifdef _AML_DEBUG_
+  h->cur_size = m->cur_size;
+#endif
+  h->used = m->used;
+}

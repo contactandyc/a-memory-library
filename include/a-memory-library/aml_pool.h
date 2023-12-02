@@ -80,6 +80,15 @@ void aml_pool_clear(aml_pool_t *h);
 /* aml_pool_destroy frees up all memory associated with the pool object */
 void aml_pool_destroy(aml_pool_t *h);
 
+struct aml_pool_marker_s;
+typedef struct aml_pool_marker_s aml_pool_marker_t;
+
+/* Use the aml_pool_marker_t to save the current pool state and then return to it later with restore.
+   This is useful if allocation after the marker is no longer needed (like the stack paradigm) */
+static inline void aml_pool_save(aml_pool_t *h, aml_pool_marker_t *cp);
+static inline void aml_pool_restore(aml_pool_t *h, aml_pool_marker_t *cp);
+
+
 /* aml_pool_set_minimum_growth_size alters the minimum size of growth blocks.
    This is particularly useful if you don't expect the pool's block size to be
    exceeded by much and you don't want the default which would be to use the
