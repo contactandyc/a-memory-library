@@ -98,6 +98,11 @@ void aml_pool_set_minimum_growth_size(aml_pool_t *h, size_t size);
 /* aml_pool_alloc allocates len uninitialized bytes which are aligned. */
 static inline void *aml_pool_alloc(aml_pool_t *h, size_t len);
 
+/* aml_pool_aalloc allocates len unitialized bytes which are aligned by 
+   alignment.  Alignment must be a non-zero, power of two.  Primary use
+   for this is for SIMD instructions where alignment would be 64. */
+void *aml_pool_aalloc(aml_pool_t *pool, size_t alignment, size_t len);
+
 /* aml_pool_min_max_alloc allocates at least min_len bytes and up to len bytes.
    If the */
 static inline void *aml_pool_min_max_alloc(aml_pool_t *h, size_t *rlen,

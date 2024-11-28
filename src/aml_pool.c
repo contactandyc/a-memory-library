@@ -147,6 +147,42 @@ void aml_pool_destroy(aml_pool_t *h) {
     aml_free(h);
 }
 
+
+void *aml_pool_aalloc(aml_pool_t *pool, size_t alignment, size_t size) {
+#ifdef _AML_DEBUG_
+    // Only check in debug mode
+    if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
+        // Alignment must be a power of 2
+        abort();
+    }
+#endif
+
+    // Check if there's enough space in the current block for aligned allocation
+    uintptr_t current = (uintptr_t)pool->curp;
+    uintptr_t aligned = (current + alignment - 1) & ~(alignment - 1);
+    size_t padding = aligned - current;
+    if (pool->curp + padding + size <= pool->current->endp) {
+        pool->curp += padding;  // Adjust pointer to aligned address
+        void *result = pool->curp;
+        pool->curp += size;  // Reserve the requested size
+        pool->used += padding + size;  // Update used size
+#ifdef _AML_DEBUG_
+        pool->cur_size += padding + size;
+        if (pool->cur_size > pool->max_size) {
+            pool->max_size = pool->cur_size;
+        }
+#endif
+        return result;
+    }
+
+    // Not enough space in the current block, grow the pool and allocate aligned
+    size_t total_size = size + alignment - 1;  // Account for alignment padding
+    char *block = (char *)_aml_pool_alloc_grow(pool, total_size);
+    aligned = ((uintptr_t)block + alignment - 1) & ~(alignment - 1);
+    return (void *)aligned;
+}
+
+
 void *_aml_pool_alloc_grow(aml_pool_t *h, size_t len) {
   size_t block_size = len;
   if (block_size < h->minimum_growth_size)
