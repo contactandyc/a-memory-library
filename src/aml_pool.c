@@ -390,3 +390,113 @@ char **aml_pool_split2f(aml_pool_t *h, size_t *num_splits, char delim,
   va_end(args);
   return _aml_pool_split2(h, num_splits, delim, r);
 }
+
+char **_aml_pool_split_with_escape(aml_pool_t *h, size_t *num_splits, char delim, char escape, const char *p) {
+    if (!p) {
+        if (num_splits)
+            *num_splits = 0;
+        static char *nil = NULL;
+        return &nil;
+    }
+
+    // Duplicate the string into the pool for modification
+    char *s = aml_pool_strdup(h, p);
+    char *current = s;
+    size_t count = 1; // At least one split by default
+    int escape_next = 0; // Flag to handle escape sequences
+
+    // First pass: Count splits while handling escape characters
+    for (char *c = s; *c; ++c) {
+        if (escape_next) {
+            escape_next = 0; // Skip this character; it was escaped
+            continue;
+        }
+        if (*c == escape) {
+            escape_next = 1; // Escape the next character
+            continue;
+        }
+        if (*c == delim) {
+            ++count;
+        }
+    }
+
+    // Allocate memory for the result array
+    char **result = (char **)aml_pool_alloc(h, sizeof(char *) * (count + 1));
+
+    size_t idx = 0;
+    result[idx++] = current; // First segment starts at the beginning
+    escape_next = 0;
+
+    // Second pass: Split the string while removing escape characters
+    for (char *c = s; *c; ++c) {
+        if (escape_next) {
+            escape_next = 0; // Keep the escaped character
+            *current++ = *c;
+            continue;
+        }
+        if (*c == escape) {
+            escape_next = 1; // Mark next character for escaping
+            continue;
+        }
+        if (*c == delim) {
+            *current++ = '\0'; // Terminate the current segment
+            result[idx++] = current; // Start a new segment
+            continue;
+        }
+        *current++ = *c; // Copy character
+    }
+
+    *current = '\0'; // Null-terminate the final segment
+    result[idx] = NULL; // Null-terminate the result array
+
+    if (num_splits) {
+        *num_splits = idx;
+    }
+
+    return result;
+}
+
+char **aml_pool_split_with_escape(aml_pool_t *h, size_t *num_splits, char delim, char escape,
+                                  const char *p) {
+  return _aml_pool_split_with_escape(h, num_splits, delim, escape, p ? aml_pool_strdup(h, p) : NULL);
+}
+
+char **aml_pool_split_with_escapef(aml_pool_t *h, size_t *num_splits, char delim, char escape,
+                                   const char *p, ...) {
+  va_list args;
+  va_start(args, p);
+  char *r = aml_pool_strdupvf(h, p, args);
+  va_end(args);
+  return _aml_pool_split_with_escape(h, num_splits, delim, escape, r);
+}
+
+char **_aml_pool_split_with_escape2(aml_pool_t *h, size_t *num_splits, char delim, char escape, char *s) {
+  size_t num_res = 0;
+  char **res = _aml_pool_split_with_escape(h, &num_res, delim, escape, s);
+  char **wp = res;
+  char **p = res;
+  char **ep = p+num_res;
+  while(p < ep) {
+    if(*p[0] != 0)
+        *wp++ = *p;
+    p++;
+  }
+  *num_splits = wp-res;
+  *wp++ = NULL;
+  return res;
+}
+
+char **aml_pool_split_with_escape2(aml_pool_t *h, size_t *num_splits, char delim, char escape,
+                                   const char *p) {
+  return _aml_pool_split_with_escape2(h, num_splits, delim, escape, p ? aml_pool_strdup(h, p) : NULL);
+}
+
+
+char **aml_pool_split_with_escape2f(aml_pool_t *h, size_t *num_splits, char delim, char escape,
+                                    const char *p, ...) {
+  va_list args;
+  va_start(args, p);
+  char *r = aml_pool_strdupvf(h, p, args);
+  va_end(args);
+  return aml_pool_split_with_escape2(h, num_splits, delim, escape, r);
+}

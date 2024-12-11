@@ -168,6 +168,26 @@ char **aml_pool_split2(aml_pool_t *h, size_t *num_splits, char delim,
 char **aml_pool_split2f(aml_pool_t *h, size_t *num_splits, char delim,
                        const char *p, ...);
 
+/* split a string into N pieces using delimiter.  The array that is returned
+   will always be valid with a NULL string at the end if p is NULL. num_splits
+   can be NULL if the number of returning pieces is not desired.  This version
+   allows for an escape character to be used to escape the delimiter. */
+char **aml_pool_split_with_escape(aml_pool_t *h, size_t *num_splits, char delim, char escape, const char *p);
+
+/* same as aml_split_with_escape except allows formatting of input string. */
+char **aml_pool_split_with_escapef(aml_pool_t *h, size_t *num_splits, char delim, char escape, const char *p, ...);
+
+/* split a string into N pieces using delimiter.  The array that is returned
+   will always be valid with a NULL string at the end if p is NULL. num_splits
+   can be NULL if the number of returning pieces is not desired.  This version
+   allows for an escape character to be used to escape the delimiter.  It also removes
+   all empty strings. */
+char **aml_pool_split_with_escape2(aml_pool_t *h, size_t *num_splits, char delim, char escape, const char *s);
+
+/* same as aml_split_with_escape2 except allows formatting of input string. */
+char **aml_pool_split_with_escape2f(aml_pool_t *h, size_t *num_splits, char delim, char escape,
+                                    const char *p, ...);
+
 /* duplicate all of the strings in arr AND the NULL terminated pointer array.  */
 char **aml_pool_strdupa(aml_pool_t *pool, char **arr);
 
