@@ -66,6 +66,13 @@ static inline aml_buffer_t *aml_buffer_pool_init(aml_pool_t *pool,
 /* destroy the buffer */
 void aml_buffer_destroy(aml_buffer_t *h);
 
+/* detach the buffer from the aml_buffer_t object.  The caller now owns the
+   buffer and should free it when done.  The length of the buffer is returned
+   in length_out.  If the buffer was allocated by a pool, it is an error to
+   free the memory.*/
+static inline
+char *aml_buffer_detach(aml_buffer_t *h, size_t *length_out);
+
 /* clear the buffer */
 static inline void aml_buffer_clear(aml_buffer_t *h);
 

@@ -38,6 +38,27 @@ static inline aml_buffer_t *aml_buffer_pool_init(aml_pool_t *pool,
   return h;
 }
 
+static inline
+char *aml_buffer_detach(aml_buffer_t *h, size_t *length_out) {
+    if (!h) {
+        if (length_out) *length_out = 0;
+        return NULL;
+    }
+
+    char *data = h->data;
+    size_t length = h->length;
+
+    // Reset the buffer to an empty state
+    h->data = NULL;
+    h->length = 0;
+    h->size = 0;
+
+    // The caller now owns 'data' and should free it when done
+    if (length_out) *length_out = length;
+
+    return data;
+}
+
 static inline void aml_buffer_clear(aml_buffer_t *h) {
   h->length = 0;
   h->data[0] = 0;
