@@ -17,6 +17,7 @@ limitations under the License.
 #include "a-memory-library/aml_alloc.h"
 #include "a-memory-library/aml_pool.h"
 #include <stdlib.h>
+#include <stdint.h>
 
 size_t aml_pool_size(aml_pool_t *h) {
   return h->size + (h->current->endp - h->curp);

@@ -17,6 +17,7 @@ limitations under the License.
 #include "a-memory-library/aml_alloc.h"
 #include <pthread.h>
 #include <string.h>
+#include <stdint.h>
 
 struct aml_allocator_s;
 typedef struct aml_allocator_s aml_allocator_t;

@@ -18,6 +18,7 @@ limitations under the License.
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #ifdef _AML_DEBUG_
 static void dump_buffer(FILE *out, const char *caller, void *p, size_t length) {
