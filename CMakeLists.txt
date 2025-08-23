@@ -55,7 +55,7 @@ target_include_directories(a_memory_library_debug PUBLIC
 )
 
 set_target_properties(a_memory_library_debug PROPERTIES
-  C_STANDARD 17
+  C_STANDARD 23
   C_STANDARD_REQUIRED YES
   POSITION_INDEPENDENT_CODE ON
 )
@@ -89,7 +89,7 @@ target_include_directories(a_memory_library_memory PUBLIC
 )
 
 set_target_properties(a_memory_library_memory PROPERTIES
-  C_STANDARD 17
+  C_STANDARD 23
   C_STANDARD_REQUIRED YES
   POSITION_INDEPENDENT_CODE ON
 )
@@ -126,7 +126,7 @@ target_include_directories(a_memory_library_static PUBLIC
 )
 
 set_target_properties(a_memory_library_static PROPERTIES
-  C_STANDARD 17
+  C_STANDARD 23
   C_STANDARD_REQUIRED YES
   POSITION_INDEPENDENT_CODE ON
 )
@@ -160,7 +160,7 @@ target_include_directories(a_memory_library_shared PUBLIC
 )
 
 set_target_properties(a_memory_library_shared PROPERTIES
-  C_STANDARD 17
+  C_STANDARD 23
   C_STANDARD_REQUIRED YES
   POSITION_INDEPENDENT_CODE ON
 )

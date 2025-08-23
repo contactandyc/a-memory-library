@@ -22,7 +22,7 @@ add_executable(test_aml_alloc  src/test_aml_alloc.c)
 list(APPEND TEST_EXECUTABLES test_aml_alloc)
 
 set_target_properties(test_aml_alloc PROPERTIES
-  C_STANDARD 17
+  C_STANDARD 23
   C_STANDARD_REQUIRED YES
 )
 if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
@@ -63,7 +63,7 @@ add_executable(test_aml_buffer  src/test_aml_buffer.c)
 list(APPEND TEST_EXECUTABLES test_aml_buffer)
 
 set_target_properties(test_aml_buffer PROPERTIES
-  C_STANDARD 17
+  C_STANDARD 23
   C_STANDARD_REQUIRED YES
 )
 if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
@@ -104,7 +104,7 @@ add_executable(test_aml_pool  src/test_aml_pool.c)
 list(APPEND TEST_EXECUTABLES test_aml_pool)
 
 set_target_properties(test_aml_pool PROPERTIES
-  C_STANDARD 17
+  C_STANDARD 23
   C_STANDARD_REQUIRED YES
 )
 if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
