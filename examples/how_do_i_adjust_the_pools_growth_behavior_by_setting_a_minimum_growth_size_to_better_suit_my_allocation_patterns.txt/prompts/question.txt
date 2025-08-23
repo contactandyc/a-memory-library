@@ -1,0 +1,1 @@
+How do I adjust the pool's growth behavior by setting a minimum growth size to better suit my allocation patterns?

@@ -1,26 +1,6 @@
-/*
-Copyright 2019-2023 Andy Curtis
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-/*
-  Memory errors are common in C applications.  The aml_allocator attempts to
-  mitigate a few of the most common ones such as freeing the wrong address,
-  freeing memory more than once, and forgetting to free memory.  If the
-  allocator is used in debug mode, allocations will be tracked.  In release
-  mode, the functions all compile down to the system equivalents.
-*/
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
+// SPDX-License-Identifier: Apache-2.0
 
 #ifndef _aml_alloc_H
 #define _aml_alloc_H
@@ -35,12 +15,15 @@ limitations under the License.
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #ifdef _AML_DEBUG_
+#define aml_dump(out) _aml_dump(out)
+
 #define aml_alloc_log(filename) _aml_alloc_log(filename)
 
 #define aml_malloc(len) _aml_malloc_d(aml_file_line(), len, false)
@@ -56,6 +39,7 @@ extern "C" {
 #define aml_dup(p, len) _aml_dup_d(aml_file_line(), p, len)
 #define aml_free(p) _aml_free_d(aml_file_line(), p)
 #else
+#define aml_dump(out) ;
 #define aml_alloc_log(filename) ;
 #define aml_malloc(len) malloc(len)
 #define aml_zalloc(len) calloc(1, len)
@@ -70,6 +54,8 @@ extern "C" {
 #define aml_dup(p, len) _aml_dup(p, len)
 #define aml_free(p) free(p)
 #endif
+
+void _aml_dump(FILE *out);
 
 void _aml_alloc_log(const char *filename);
 
@@ -114,6 +100,15 @@ static inline void *_aml_dup(const void *p, size_t len) {
   void *r = malloc(len);
   memcpy(r, p, len);
   return r;
+}
+
+static inline
+void _aml_free(void *p) {
+#ifdef _AML_DEBUG_
+    _aml_free_d(aml_file_line(), p);
+#else
+    free(p);
+#endif
 }
 
 #ifdef __cplusplus

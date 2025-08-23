@@ -1,23 +1,15 @@
-/*
-Copyright 2019 Andy Curtis
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
+// SPDX-License-Identifier: Apache-2.0
 
 #include "a-memory-library/aml_alloc.h"
 #include "a-memory-library/aml_pool.h"
 #include <stdlib.h>
 #include <stdint.h>
+
+// #ifndef _AML_USE_MALLOC_
+// #define _AML_USE_MALLOC_
+// #endif
 
 size_t aml_pool_size(aml_pool_t *h) {
   return h->size + (h->current->endp - h->curp);
@@ -63,17 +55,25 @@ aml_pool_t *_aml_pool_init(size_t initial_size) {
 
   aml_pool_t *h;
 #ifdef _AML_DEBUG_
+#ifdef _AML_USE_MALLOC_
+  h = (aml_pool_t *)malloc(block_size + sizeof(aml_pool_t) + sizeof(aml_pool_node_t));
+#else
   h = (aml_pool_t *)_aml_malloc_d(
       caller, block_size + sizeof(aml_pool_t) + sizeof(aml_pool_node_t),
       true);
+#endif
   memset(h, 0, sizeof(aml_pool_t) + sizeof(aml_pool_node_t));
   h->dump.dump = dump_pool;
   h->initial_size = initial_size;
   h->cur_size = 0;
   h->max_size = 0;
 #else
-  h = (aml_pool_t *)aml_malloc(block_size + sizeof(aml_pool_t) +
-                             sizeof(aml_pool_node_t));
+#ifdef _AML_USE_MALLOC_
+    h = (aml_pool_t *)malloc(block_size + sizeof(aml_pool_t) + sizeof(aml_pool_node_t));
+#else
+    h = (aml_pool_t *)aml_malloc(block_size + sizeof(aml_pool_t) +
+                                 sizeof(aml_pool_node_t));
+#endif
   memset(h, 0, sizeof(aml_pool_t) + sizeof(aml_pool_node_t));
 #endif
   if (!h) /* what else might we do? */
@@ -121,8 +121,13 @@ void aml_pool_clear(aml_pool_t *h) {
   /* remove the extra blocks (the ones where prev != NULL) */
   aml_pool_node_t *prev = h->current->prev;
   while (prev) {
-    if(!h->pool)
-      aml_free(h->current);
+    if(!h->pool) {
+#ifdef _AML_USE_MALLOC_
+        free(h->current);
+#else
+        aml_free(h->current);
+#endif
+    }
     h->current = prev;
     prev = prev->prev;
   }
@@ -144,8 +149,13 @@ void aml_pool_destroy(aml_pool_t *h) {
     leaves the main block and main node allocated */
   aml_pool_clear(h);
   /* free the main block and the main node */
-  if(!h->pool)
+  if(!h->pool) {
+#ifdef _AML_USE_MALLOC_
+    free(h);
+#else
     aml_free(h);
+#endif
+  }
 }
 
 
@@ -189,8 +199,15 @@ void *_aml_pool_alloc_grow(aml_pool_t *h, size_t len) {
   if (block_size < h->minimum_growth_size)
     block_size = h->minimum_growth_size;
   aml_pool_node_t *block;
-  if(!h->pool)
+  if(len > 100*1024*1024)
+    printf("aml_pool_t: %p(%p): growing to %lu, %lu\n", h, h->pool, block_size, h->size);
+  if(!h->pool) {
+#ifdef _AML_USE_MALLOC_
+    block = (aml_pool_node_t *)malloc(sizeof(aml_pool_node_t) + block_size);
+#else
     block = (aml_pool_node_t *)aml_malloc(sizeof(aml_pool_node_t) + block_size);
+#endif
+  }
   else
     block = (aml_pool_node_t *)aml_pool_alloc(h->pool, sizeof(aml_pool_node_t) + block_size);
   if (!block)
@@ -246,6 +263,7 @@ static size_t count_bytes_in_array(char **a, size_t *n) {
     num++;
     a++;
   }
+  if (n) *n = num;   // <-- missing in current code
   return len;
 }
 
@@ -271,32 +289,32 @@ char **aml_pool_strdupa(aml_pool_t *pool, char **a) {
 }
 
 static size_t count_bytes_in_arrayn(char **a, size_t num) {
-  size_t len = (sizeof(char *) * (num + 1));
+  size_t len = sizeof(char *) * (num + 1);
   for (size_t i = 0; i < num; i++) {
-    len += strlen(*a) + 1;
-    a++;
+    if (!a[i]) continue;          // allow NULLs in the first num entries
+    len += strlen(a[i]) + 1;      // include '\0'
   }
   return len;
 }
 
 char **aml_pool_strdupan(aml_pool_t *pool, char **a, size_t n) {
-  if (!a)
-    return NULL;
+  if (!a) return NULL;
 
   size_t len = count_bytes_in_arrayn(a, n);
   char **r = (char **)aml_pool_alloc(pool, len);
   char *m = (char *)(r + n + 1);
-  char **rp = r;
-  char **ae = a + n;
-  while (a < ae) {
-    *rp++ = m;
-    char *s = *a;
-    while (*s)
-      *m++ = *s++;
-    *m++ = 0;
-    a++;
+
+  for (size_t i = 0; i < n; i++) {
+    if (a[i]) {
+      r[i] = m;
+      const char *s = a[i];
+      while (*s) *m++ = *s++;
+      *m++ = '\0';
+    } else {
+      r[i] = NULL;  // preserve NULL pointers in the array
+    }
   }
-  *rp = NULL;
+  r[n] = NULL;
   return r;
 }
 
@@ -500,4 +518,185 @@ char **aml_pool_split_with_escape2f(aml_pool_t *h, size_t *num_splits, char deli
   char *r = aml_pool_strdupvf(h, p, args);
   va_end(args);
   return aml_pool_split_with_escape2(h, num_splits, delim, escape, r);
+}
+
+// -----------------------------------------------------------------------------
+// Base64 Encode Table
+// -----------------------------------------------------------------------------
+static const char b64_table[65] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+// -----------------------------------------------------------------------------
+// aml_pool_base64_encode
+// -----------------------------------------------------------------------------
+char *aml_pool_base64_encode(aml_pool_t *pool, const unsigned char *data, size_t data_len) {
+    if (!pool || !data || data_len == 0) {
+        // Return an empty string (allocated in the pool) for consistency
+        char *empty = (char *)aml_pool_alloc(pool, 1);
+        empty[0] = '\0';
+        return empty;
+    }
+
+    // Calculate the length of the output
+    // Base64 encodes each 3-byte block into 4 chars. If data_len isn't multiple
+    // of 3, padding is added. So final length = 4 * ceil(data_len / 3).
+    size_t encoded_len = 4 * ((data_len + 2) / 3);
+
+    // Allocate buffer for the encoded string (+1 for '\0')
+    char *encoded = (char *)aml_pool_alloc(pool, encoded_len + 1);
+    encoded[encoded_len] = '\0'; // null-terminate
+
+    // Process input in 3-byte chunks
+    size_t i = 0, j = 0;
+    while (i < data_len) {
+        // Collect 3 bytes (24 bits)
+        uint32_t octet_a = i < data_len ? data[i++] : 0;
+        uint32_t octet_b = i < data_len ? data[i++] : 0;
+        uint32_t octet_c = i < data_len ? data[i++] : 0;
+
+        uint32_t triple = (octet_a << 16) | (octet_b << 8) | octet_c;
+
+        // Encode into 4 Base64 chars
+        encoded[j++] = b64_table[(triple >> 18) & 0x3F];
+        encoded[j++] = b64_table[(triple >> 12) & 0x3F];
+        encoded[j++] = b64_table[(triple >> 6)  & 0x3F];
+        encoded[j++] = b64_table[(triple)       & 0x3F];
+    }
+
+    // Add '=' padding if necessary
+    // If data_len % 3 == 1, we added 2 extra Base64 chars => last two should be '='
+    // If data_len % 3 == 2, we added 1 extra Base64 char => last one should be '='
+    int mod = data_len % 3;
+    if (mod > 0) {
+        encoded[encoded_len - 1] = '=';
+        if (mod == 1) {
+            encoded[encoded_len - 2] = '=';
+        }
+    }
+
+    return encoded;
+}
+
+// -----------------------------------------------------------------------------
+// Base64 Decode Table
+// -----------------------------------------------------------------------------
+static const unsigned char b64_dec_table[256] = {
+    /*   0- 15 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /*  16- 31 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /*  32- 47 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF,   62, 0xFF, 0xFF, 0xFF,   63,
+    /*  48- 63 */   52,   53,   54,   55,   56,   57,   58,   59,
+                    60,   61, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /*  64- 79 */ 0xFF,    0,    1,    2,    3,    4,    5,    6,
+                     7,    8,    9,   10,   11,   12,   13,   14,
+    /*  80- 95 */   15,   16,   17,   18,   19,   20,   21,   22,
+                    23,   24,   25, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /*  96-111 */ 0xFF,   26,   27,   28,   29,   30,   31,   32,
+                    33,   34,   35,   36,   37,   38,   39,   40,
+    /* 112-127 */   41,   42,   43,   44,   45,   46,   47,   48,
+                    49,   50,   51, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /* 128-143 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /* 144-159 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /* 160-175 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /* 176-191 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /* 192-207 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /* 208-223 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /* 224-239 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    /* 240-255 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+};
+
+// -----------------------------------------------------------------------------
+// aml_pool_base64_decode
+// -----------------------------------------------------------------------------
+unsigned char *aml_pool_base64_decode(aml_pool_t *pool, size_t *out_len, const char *b64) {
+    if (!pool || !b64) {
+        if (out_len) *out_len = 0;
+        return NULL;
+    }
+
+    // We can skip leading/trailing whitespace if desired, but for simplicity:
+    // We assume `b64` is a valid Base64 string (possibly with '=' padding).
+    // We'll do a quick length check ignoring '=' padding.
+    size_t in_len = strlen(b64);
+    if (in_len == 0) {
+        if (out_len) *out_len = 0;
+        unsigned char *empty = (unsigned char*)aml_pool_alloc(pool, 1);
+        empty[0] = '\0';
+        return empty;
+    }
+
+    // Count how many actual base64 chars we have (ignore '=' at end)
+    // We won't do robust validation here, but we do handle trailing '='
+    size_t pad = 0;
+    if (in_len >= 1 && b64[in_len - 1] == '=') pad++;
+    if (in_len >= 2 && b64[in_len - 2] == '=') pad++;
+
+    // The maximum possible output size is 3 * (in_len / 4).
+    // We'll handle the final result length carefully once we parse.
+    size_t decoded_max_len = 3 * (in_len / 4);
+
+    // Allocate a buffer for the decoded result (plus 1 for safety \0).
+    unsigned char *decoded = (unsigned char*)aml_pool_alloc(pool, decoded_max_len + 1);
+
+    // Decode in 4-byte chunks
+    size_t i = 0, j = 0;
+    while (i < in_len) {
+        // Each 4 input chars -> 3 output bytes
+        // We'll handle '=' by treating them as zero in the decode table for now.
+
+        uint32_t val = 0;
+        int shift = 18;
+
+        for (int k = 0; k < 4 && i < in_len; k++) {
+            unsigned char c = (unsigned char)b64[i++];
+            if (c == '=') {
+                // If padding, shift doesn't matter, just skip
+                c = 0;
+            } else {
+                unsigned char d = b64_dec_table[c];
+                if (d == 0xFF) {
+                    // Invalid character
+                    // In production, you might skip or handle error
+                    if (out_len) *out_len = 0;
+                    return NULL;
+                }
+                c = d;
+            }
+
+            val |= ((uint32_t)c << shift);
+            shift -= 6;
+        }
+
+        decoded[j++] = (unsigned char)((val >> 16) & 0xFF);
+        decoded[j++] = (unsigned char)((val >> 8)  & 0xFF);
+        decoded[j++] = (unsigned char)(val & 0xFF);
+    }
+
+    // Adjust final length for padding
+    // Each '=' can remove one output byte
+    size_t decoded_len = j;
+    if (pad) {
+        decoded_len -= pad;
+    }
+
+    // Null terminate for safety if you want to treat as string
+    if (decoded_len < decoded_max_len + 1) {
+        decoded[decoded_len] = '\0';
+    }
+
+    // Provide actual length if caller wants it
+    if (out_len) {
+        *out_len = decoded_len;
+    }
+    return decoded;
 }

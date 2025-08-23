@@ -1,18 +1,6 @@
-/*
-Copyright 2019 Andy Curtis
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
+// SPDX-License-Identifier: Apache-2.0
 
 #include "a-memory-library/aml_buffer.h"
 
@@ -44,13 +32,6 @@ aml_buffer_t *_aml_buffer_init(size_t initial_size) {
   h->size = initial_size;
   h->pool = NULL;
   return h;
-}
-
-void aml_buffer_destroy(aml_buffer_t *h) {
-  if (!h->pool) {
-    aml_free(h->data);
-    aml_free(h);
-  }
 }
 
 void _aml_buffer_append(aml_buffer_t *h, const void *data, size_t length) {

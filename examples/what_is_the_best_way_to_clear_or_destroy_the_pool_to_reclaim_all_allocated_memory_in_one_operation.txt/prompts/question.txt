@@ -1,0 +1,1 @@
+What is the best way to clear or destroy the pool to reclaim all allocated memory in one operation?

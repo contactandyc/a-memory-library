@@ -1,0 +1,1 @@
+How do I create a nested pool from an existing pool to manage temporary or scoped allocations?

@@ -1,0 +1,1 @@
+How can I initialize a memory pool and then allocate memory for my data structures?

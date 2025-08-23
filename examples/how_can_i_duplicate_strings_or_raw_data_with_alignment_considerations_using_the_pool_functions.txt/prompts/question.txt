@@ -1,0 +1,1 @@
+How can I duplicate strings or raw data with alignment considerations using the pool functions?

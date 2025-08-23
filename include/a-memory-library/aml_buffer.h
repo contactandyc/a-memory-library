@@ -1,18 +1,6 @@
-/*
-Copyright 2019 Andy Curtis
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
+// SPDX-License-Identifier: Apache-2.0
 
 #ifndef _aml_buffer_H
 #define _aml_buffer_H
@@ -36,6 +24,7 @@ limitations under the License.
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,6 +53,7 @@ static inline aml_buffer_t *aml_buffer_pool_init(aml_pool_t *pool,
                                                size_t initial_size);
 
 /* destroy the buffer */
+static inline
 void aml_buffer_destroy(aml_buffer_t *h);
 
 /* detach the buffer from the aml_buffer_t object.  The caller now owns the
@@ -75,6 +65,9 @@ char *aml_buffer_detach(aml_buffer_t *h, size_t *length_out);
 
 /* clear the buffer */
 static inline void aml_buffer_clear(aml_buffer_t *h);
+
+/* clear the buffer, freeing buffer if too large */
+static inline void aml_buffer_reset(aml_buffer_t *h, size_t max_size);
 
 /* resize the buffer and return a pointer to the beginning of the buffer.  This
    will retain the original data in the buffer for up to length bytes. */
@@ -117,10 +110,13 @@ static inline void aml_buffer_setf(aml_buffer_t *h, const char *fmt, ...);
 /* Functions to append contents into a buffer (vs set). */
 /* append bytes to the current buffer */
 static inline void aml_buffer_append(aml_buffer_t *h, const void *data,
-                                    size_t length);
+                                     size_t length);
 
 /* append a string to the current buffer */
 static inline void aml_buffer_appends(aml_buffer_t *h, const char *s);
+
+/* append a string to the current buffer with zero terminator */
+static inline void aml_buffer_appendsz(aml_buffer_t *h, const char *s);
 
 /* append a character to the current buffer */
 static inline void aml_buffer_appendc(aml_buffer_t *h, char ch);

@@ -1,23 +1,12 @@
-/*
-Copyright 2019-2023 Andy Curtis
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
+// SPDX-License-Identifier: Apache-2.0
 
 #include "a-memory-library/aml_alloc.h"
 #include <pthread.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
 
 struct aml_allocator_s;
 typedef struct aml_allocator_s aml_allocator_t;
@@ -58,6 +47,8 @@ static void print_node(FILE *out, const char *caller, ssize_t len,
   }
 }
 
+aml_allocator_t *global_allocator = NULL;
+
 static void _aml_dump_global_allocations(aml_allocator_t *a, FILE *out) {
   if (a->head) {
     fprintf(out,
@@ -77,6 +68,10 @@ void aml_dump_global_allocations(aml_allocator_t *a, FILE *out) {
   pthread_mutex_lock(&a->mutex);
   _aml_dump_global_allocations(a, out);
   pthread_mutex_unlock(&a->mutex);
+}
+
+void _aml_dump(FILE *out) {
+    aml_dump_global_allocations(global_allocator, out);
 }
 
 void save_old_log(aml_allocator_t *a, size_t saves, char *tmp) {
@@ -131,7 +126,7 @@ void *dump_global_allocations_thread(void *arg) {
       done = 1;
     else {
       clock_gettime(CLOCK_REALTIME, &ts);
-      ts.tv_sec += 60;
+      ts.tv_sec += 15;
       pthread_cond_timedwait(&a->cond, &a->mutex, &ts);
     }
     pthread_mutex_unlock(&a->mutex);
@@ -139,8 +134,6 @@ void *dump_global_allocations_thread(void *arg) {
   free(tmp);
   return NULL;
 }
-
-aml_allocator_t *global_allocator = NULL;
 
 void aml_allocator_init() {
   if(global_allocator)
@@ -159,6 +152,8 @@ void aml_allocator_init() {
 
 void _aml_alloc_log(const char *filename) {
   aml_allocator_t *a = global_allocator;
+  if (a->logfile) { free(a->logfile); a->logfile = NULL; }
+  if (!filename) return;
   a->logfile = strdup(filename);
   if (filename) {
     pthread_cond_init(&a->cond, NULL);
@@ -203,6 +198,9 @@ void amlCleanupFun(void) { aml_allocator_destroy(); }
 void *_aml_malloc_d(const char *caller, size_t len, bool custom) {
   if (!len)
     return NULL;
+
+    if(len > 24*1024*1024)
+        printf("allocating %lu bytes\n", len);
 
   aml_allocator_t *a = global_allocator;
 
@@ -322,12 +320,14 @@ static size_t count_bytes_in_array(char **a, size_t *n) {
 }
 
 static size_t count_bytes_in_arrayn(char **a, size_t num) {
-  size_t len = (sizeof(char *) * (num + 1));
-  for (size_t i = 0; i < num; i++) {
-    len += strlen(*a) + 1;
-    a++;
-  }
-  return len;
+    /* Reserve space for exactly num pointers + one final NULL */
+    size_t len = sizeof(char *) * (num + 1);
+    for (size_t i = 0; i < num; i++) {
+        if (a[i]) {
+            len += strlen(a[i]) + 1; /* bytes for this string including '\0' */
+        }
+    }
+    return len;
 }
 
 char **_aml_strdupa2_d(const char *caller, char **a) {
@@ -375,25 +375,30 @@ char **_aml_strdupa_d(const char *caller, char **a) {
   return r;
 }
 
-char **_aml_strdupan_d(const char *caller, char **a, size_t n) {
-  if (!a)
-    return NULL;
 
-  size_t len = count_bytes_in_arrayn(a, n);
-  char **r = (char **)_aml_malloc_d(caller, len, false);
-  char *m = (char *)(r + n + 1);
-  char **rp = r;
-  while (*a) {
-    *rp++ = m;
-    char *s = *a;
-    while (*s)
-      *m++ = *s++;
-    *m++ = 0;
-    a++;
-  }
-  *rp = NULL;
-  return r;
+char **_aml_strdupan_d(const char *caller, char **a, size_t n) {
+    if (!a)
+        return NULL;
+
+    size_t len = count_bytes_in_arrayn(a, n);
+    char **r = (char **)_aml_malloc_d(caller, len, false);
+    char *m = (char *)(r + n + 1);
+    char **rp = r;
+
+    for (size_t i = 0; i < n; i++) {
+        if (a[i]) {
+            *rp++ = m;
+            const char *s = a[i];
+            while (*s) *m++ = *s++;
+            *m++ = '\0';
+        } else {
+            *rp++ = NULL;
+        }
+    }
+    *rp = NULL; /* always terminate pointer array */
+    return r;
 }
+
 
 char **_aml_strdupa(char **a) {
   if (!a)
@@ -417,24 +422,28 @@ char **_aml_strdupa(char **a) {
 }
 
 char **_aml_strdupan(char **a, size_t n) {
-  if (!a)
-    return NULL;
+    if (!a)
+        return NULL;
 
-  size_t len = count_bytes_in_arrayn(a, n);
-  char **r = (char **)malloc(len);
-  char *m = (char *)(r + n + 1);
-  char **rp = r;
-  while (*a) {
-    *rp++ = m;
-    char *s = *a;
-    while (*s)
-      *m++ = *s++;
-    *m++ = 0;
-    a++;
-  }
-  *rp = NULL;
-  return r;
+    size_t len = count_bytes_in_arrayn(a, n);
+    char **r = (char **)malloc(len);
+    char *m = (char *)(r + n + 1);
+    char **rp = r;
+
+    for (size_t i = 0; i < n; i++) {
+        if (a[i]) {
+            *rp++ = m;
+            const char *s = a[i];
+            while (*s) *m++ = *s++;
+            *m++ = '\0';
+        } else {
+            *rp++ = NULL;
+        }
+    }
+    *rp = NULL;
+    return r;
 }
+
 
 static aml_allocator_node_t *get_aml_node(const char *caller, void *p, const char *message) {
   aml_allocator_t* a = global_allocator;
@@ -443,6 +452,11 @@ static aml_allocator_node_t *get_aml_node(const char *caller, void *p, const cha
   n--;
   if (n->a == a)
     return n;
+
+  pthread_mutex_lock(&a->mutex);
+  fprintf(stderr, "Bad pointer passed to %s: %s\n", caller, message);
+  pthread_mutex_unlock(&a->mutex);
+  abort();
 
   aml_allocator_node_t *n2 = a->head;
   char *c = (char *)p;
