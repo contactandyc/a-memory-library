@@ -19,6 +19,8 @@ find_library(M_LIB m)
 set(TEST_EXECUTABLES "")
 add_executable(test_aml_alloc  src/test_aml_alloc.c)
 
+target_include_directories(test_aml_alloc PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 list(APPEND TEST_EXECUTABLES test_aml_alloc)
 
 set_target_properties(test_aml_alloc PROPERTIES
@@ -60,6 +62,8 @@ endif()
 add_test(NAME test_aml_alloc COMMAND $<TARGET_FILE:test_aml_alloc>)
 add_executable(test_aml_buffer  src/test_aml_buffer.c)
 
+target_include_directories(test_aml_buffer PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 list(APPEND TEST_EXECUTABLES test_aml_buffer)
 
 set_target_properties(test_aml_buffer PROPERTIES
@@ -100,6 +104,8 @@ endif()
 
 add_test(NAME test_aml_buffer COMMAND $<TARGET_FILE:test_aml_buffer>)
 add_executable(test_aml_pool  src/test_aml_pool.c)
+
+target_include_directories(test_aml_pool PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 list(APPEND TEST_EXECUTABLES test_aml_pool)
 
