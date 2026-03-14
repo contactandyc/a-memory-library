@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2019–2026 Andy Curtis <contactandyc@gmail.com>
+// SPDX-FileCopyrightText: 2019–2025 Andy Curtis <contactandyc@gmail.com>
 // SPDX-FileCopyrightText: 2024–2025 Knode.ai — technical questions: contact Andy (above)
 // SPDX-License-Identifier: Apache-2.0
 
@@ -142,6 +142,9 @@ size_t aml_pool_size(aml_pool_t *h);
   overhead for the structures and this is independent of any allocating calls.
 */
 size_t aml_pool_used(aml_pool_t *h);
+
+/* aml_pool_max_used returns the maximum usage */
+size_t aml_pool_max_used(aml_pool_t *h);
 
 /* split a string into N pieces using delimiter.  The array that is returned
    will always be valid with a NULL string at the end if p is NULL. num_splits
