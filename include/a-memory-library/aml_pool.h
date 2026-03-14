@@ -143,6 +143,9 @@ size_t aml_pool_size(aml_pool_t *h);
 */
 size_t aml_pool_used(aml_pool_t *h);
 
+/* aml_pool_max_used returns the maximum usage */
+size_t aml_pool_max_used(aml_pool_t *h);
+
 /* split a string into N pieces using delimiter.  The array that is returned
    will always be valid with a NULL string at the end if p is NULL. num_splits
    can be NULL if the number of returning pieces is not desired. */

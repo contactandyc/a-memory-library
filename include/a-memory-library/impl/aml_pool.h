@@ -36,7 +36,6 @@ struct aml_pool_s {
      thread-safe. */
   size_t cur_size;
   /* Everytime the pool get's cleared, cur_size is reset */
-  size_t max_size;
 #endif
 
   /* A pointer to the current block associated with the pool.  If there is more
@@ -58,6 +57,9 @@ struct aml_pool_s {
   /* the total number of bytes allocated by the pool object */
   size_t used;
 
+  /* the max sizeof the pool overall */
+  size_t max_used;
+
   /* if set, memory is allocated from this pool */
   aml_pool_t *pool;
 };
@@ -68,8 +70,6 @@ static inline void *aml_pool_ualloc(aml_pool_t *h, size_t len) {
     h->curp = r + len;
 #ifdef _AML_DEBUG_
     h->cur_size += len;
-    if (h->cur_size > h->max_size)
-      h->max_size = h->cur_size;
 #endif
     return r;
   }
@@ -85,8 +85,6 @@ static inline void *aml_pool_min_max_alloc(aml_pool_t *h, size_t *rlen,
     h->curp = r + len;
 #ifdef _AML_DEBUG_
     h->cur_size += len;
-    if (h->cur_size > h->max_size)
-      h->max_size = h->cur_size;
 #endif
     *rlen = len;
     return r;
@@ -96,8 +94,6 @@ static inline void *aml_pool_min_max_alloc(aml_pool_t *h, size_t *rlen,
     h->curp = r + len;
 #ifdef _AML_DEBUG_
     h->cur_size += len;
-    if (h->cur_size > h->max_size)
-      h->max_size = h->cur_size;
 #endif
     *rlen = len;
     return r;
@@ -115,8 +111,6 @@ static inline void *aml_pool_alloc(aml_pool_t *h, size_t len) {
     h->curp = r + len;
 #ifdef _AML_DEBUG_
     h->cur_size += len;
-    if (h->cur_size > h->max_size)
-      h->max_size = h->cur_size;
 #endif
     return r;
   }

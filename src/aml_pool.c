@@ -17,6 +17,11 @@ size_t aml_pool_size(aml_pool_t *h) {
 
 size_t aml_pool_used(aml_pool_t *h) { return h->used; }
 
+size_t aml_pool_max_used(aml_pool_t *h) {
+    return h->max_used > h->used ? h->max_used : h->used;
+}
+
+
 void aml_pool_set_minimum_growth_size(aml_pool_t *h, size_t size) {
   if (size == 0)
     abort(); /* this doesn't make sense */
@@ -26,8 +31,9 @@ void aml_pool_set_minimum_growth_size(aml_pool_t *h, size_t size) {
 #ifdef _AML_DEBUG_
 static void dump_pool(FILE *out, const char *caller, void *p, size_t length) {
   aml_pool_t *pool = (aml_pool_t *)p;
-  fprintf(out, "%s size: %lu, max_size: %lu, initial_size: %lu used: %lu ",
-          caller, pool->cur_size, pool->max_size, pool->initial_size,
+  size_t max_used = aml_pool_max_used(pool);
+  fprintf(out, "%s size: %lu, max_used: %lu, initial_size: %lu used: %lu ",
+          caller, pool->cur_size, max_used, pool->initial_size,
           pool->used);
 }
 
@@ -66,7 +72,6 @@ aml_pool_t *_aml_pool_init(size_t initial_size) {
   h->dump.dump = dump_pool;
   h->initial_size = initial_size;
   h->cur_size = 0;
-  h->max_size = 0;
 #else
 #ifdef _AML_USE_MALLOC_
     h = (aml_pool_t *)malloc(block_size + sizeof(aml_pool_t) + sizeof(aml_pool_node_t));
@@ -80,6 +85,7 @@ aml_pool_t *_aml_pool_init(size_t initial_size) {
     abort();
   h->used = initial_size + sizeof(aml_pool_t) + sizeof(aml_pool_node_t);
   h->size = 0;
+  h->max_used = 0;
   h->pool = NULL;
   h->current = (aml_pool_node_t *)(h + 1);
   h->curp = (char *)(h->current + 1);
@@ -101,12 +107,13 @@ aml_pool_t *aml_pool_pool_init(aml_pool_t *pool, size_t initial_size) {
   size_t block_size = initial_size;
 
   aml_pool_t *h;
-  h = (aml_pool_t *)aml_pool_alloc(pool, block_size + sizeof(aml_pool_t) +
-                                 sizeof(aml_pool_node_t));
+  h = (aml_pool_t *)aml_pool_zalloc(pool, block_size + sizeof(aml_pool_t) +
+                                    sizeof(aml_pool_node_t));
   if (!h) /* what else might we do? */
     abort();
   h->used = initial_size + sizeof(aml_pool_t) + sizeof(aml_pool_node_t);
   h->size = 0;
+  h->max_used = 0;
   h->current = (aml_pool_node_t *)(h + 1);
   h->curp = (char *)(h->current + 1);
   h->current->endp = h->curp + block_size;
@@ -137,6 +144,8 @@ void aml_pool_clear(aml_pool_t *h) {
 
   /* reset size and used */
   h->size = 0;
+  if(h->used > h->max_used)
+    h->max_used = h->used;
 #ifdef _AML_DEBUG_
   h->cur_size = 0;
 #endif
@@ -179,9 +188,6 @@ void *aml_pool_aalloc(aml_pool_t *pool, size_t alignment, size_t size) {
         pool->used += padding + size;  // Update used size
 #ifdef _AML_DEBUG_
         pool->cur_size += padding + size;
-        if (pool->cur_size > pool->max_size) {
-            pool->max_size = pool->cur_size;
-        }
 #endif
         return result;
     }
@@ -222,8 +228,6 @@ void *_aml_pool_alloc_grow(aml_pool_t *h, size_t len) {
   h->curp = r + len;
 #ifdef _AML_DEBUG_
   h->cur_size += len;
-  if (h->cur_size > h->max_size)
-    h->max_size = h->cur_size;
 #endif
   return r;
 }
@@ -241,8 +245,6 @@ char *aml_pool_strdupvf(aml_pool_t *pool, const char *fmt, va_list args) {
     pool->curp += n + 1;
 #ifdef _AML_DEBUG_
     pool->cur_size += (n + 1);
-    if (pool->cur_size > pool->max_size)
-      pool->max_size = pool->cur_size;
 #endif
     return r;
   }
@@ -391,7 +393,8 @@ char **_aml_pool_split2(aml_pool_t *h, size_t *num_splits, char delim, char *s) 
         *wp++ = *p;
     p++;
   }
-  *num_splits = wp-res;
+  if(num_splits)
+      *num_splits = wp-res;
   *wp++ = NULL;
   return res;
 }
@@ -500,7 +503,8 @@ char **_aml_pool_split_with_escape2(aml_pool_t *h, size_t *num_splits, char deli
         *wp++ = *p;
     p++;
   }
-  *num_splits = wp-res;
+  if(num_splits)
+      *num_splits = wp-res;
   *wp++ = NULL;
   return res;
 }
