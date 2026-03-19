@@ -1,0 +1,5 @@
+project_title: A Memory Library
+version: 0.0.2
+
+profile: andy-curtis/andy-curtis-knode
+template: cmake-c-git
