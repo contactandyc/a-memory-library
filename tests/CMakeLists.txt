@@ -17,11 +17,22 @@ option(A_ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
 
 find_library(M_LIB m)
 
-# ---- Test executables ----
-set(TEST_EXECUTABLES "")
-add_executable(test_aml_alloc  src/test_aml_alloc.c)
 
-target_include_directories(test_aml_alloc PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+# Fallback for standalone test builds (when not included via add_subdirectory)
+if(NOT TARGET a_memory_library::a_memory_library)
+  find_package(a_memory_library CONFIG REQUIRED)
+endif()
+
+set(TEST_EXECUTABLES "")
+
+# ---- Targets ----
+add_executable(test_aml_alloc
+  src/test_aml_alloc.c
+)
+
+target_include_directories(test_aml_alloc PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
 
 list(APPEND TEST_EXECUTABLES test_aml_alloc)
 
@@ -36,9 +47,6 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
-if(NOT TARGET a_memory_library::a_memory_library)
-  find_package(a_memory_library CONFIG REQUIRED)
-endif()
 target_link_libraries(test_aml_alloc PRIVATE a_memory_library::a_memory_library)
 
 if(M_LIB)
@@ -62,9 +70,13 @@ if(A_ENABLE_COVERAGE)
 endif()
 
 add_test(NAME test_aml_alloc COMMAND $<TARGET_FILE:test_aml_alloc>)
-add_executable(test_aml_buffer  src/test_aml_buffer.c)
+add_executable(test_aml_buffer
+  src/test_aml_buffer.c
+)
 
-target_include_directories(test_aml_buffer PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(test_aml_buffer PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
 
 list(APPEND TEST_EXECUTABLES test_aml_buffer)
 
@@ -79,9 +91,6 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
-if(NOT TARGET a_memory_library::a_memory_library)
-  find_package(a_memory_library CONFIG REQUIRED)
-endif()
 target_link_libraries(test_aml_buffer PRIVATE a_memory_library::a_memory_library)
 
 if(M_LIB)
@@ -105,9 +114,13 @@ if(A_ENABLE_COVERAGE)
 endif()
 
 add_test(NAME test_aml_buffer COMMAND $<TARGET_FILE:test_aml_buffer>)
-add_executable(test_aml_pool  src/test_aml_pool.c)
+add_executable(test_aml_pool
+  src/test_aml_pool.c
+)
 
-target_include_directories(test_aml_pool PRIVATE  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(test_aml_pool PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
 
 list(APPEND TEST_EXECUTABLES test_aml_pool)
 
@@ -122,9 +135,6 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
-if(NOT TARGET a_memory_library::a_memory_library)
-  find_package(a_memory_library CONFIG REQUIRED)
-endif()
 target_link_libraries(test_aml_pool PRIVATE a_memory_library::a_memory_library)
 
 if(M_LIB)

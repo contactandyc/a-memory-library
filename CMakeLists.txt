@@ -8,17 +8,14 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(a_memory_library
-  VERSION 0.0.2
+  VERSION 0.1.0
   LANGUAGES C
 )
-# ── Variant selection for the umbrella alias (NOT for building) ───────────────
-# We build ALL variant targets below; this just selects which one the umbrella
-# alias (a_memory_library::a_memory_library) points to during this configure.
+# ── Variant selection for the umbrella alias ──────────────────────────────────
 set(A_BUILD_VARIANT "debug" CACHE STRING
     "Umbrella choice for in-tree linking (debug|memory|static|shared)")
 set_property(CACHE A_BUILD_VARIANT PROPERTY STRINGS debug memory static shared)
 
-# ── Developer-only coverage toggle (applies to this entire CMake tree) ────────
 option(A_ENABLE_COVERAGE "Enable code coverage instrumentation for this build" OFF)
 if(A_ENABLE_COVERAGE)
   if(CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -30,12 +27,10 @@ if(A_ENABLE_COVERAGE)
   endif()
 endif()
 
-# Memory-profile convenience for the *_memory variant
 option(A_BUILD_ENABLE_MEMORY_PROFILE "Define a macro on the 'memory' variant" OFF)
 set(A_BUILD_MEMORY_DEFINE "_AML_DEBUG_" CACHE STRING
     "Macro to define on the 'memory' variant when memory profiling is enabled")
 
-# Emulate Debug/Release per-variant (so one configure can build both kinds)
 if(MSVC)
   set(_A_DEBUG_OPTS /Zi /Od)
   set(_A_RELEASE_OPTS /O2 /DNDEBUG)
@@ -50,11 +45,13 @@ include(GNUInstallDirs)
 
 # ---- Dependencies (PkgConfig Shims) ----
 
-
-# ── Library variants (ALL are defined & built/installed) ──────────────────────
+# ── Main Targets (Compiled Libraries) ─────────────────────────────────────────
 
 add_library(a_memory_library_debug STATIC
-  src/aml_alloc.c  src/aml_buffer.c  src/aml_pool.c)
+  src/aml_alloc.c
+  src/aml_buffer.c
+  src/aml_pool.c
+)
 
 target_include_directories(a_memory_library_debug PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -74,23 +71,22 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
-# Link deps once
-target_link_libraries(a_memory_library_debug PUBLIC)
+target_link_libraries(a_memory_library_debug PUBLIC
+)
 
-# Per-variant optimization flavor
 target_compile_options(a_memory_library_debug PRIVATE ${_A_DEBUG_OPTS})
 
-# Memory profiling macro on the memory variant (opt-in)
 
-# Install this variant
 install(TARGETS a_memory_library_debug EXPORT a_memory_libraryTargets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
 add_library(a_memory_library_memory STATIC
-  src/aml_alloc.c  src/aml_buffer.c  src/aml_pool.c)
+  src/aml_alloc.c
+  src/aml_buffer.c
+  src/aml_pool.c
+)
 
 target_include_directories(a_memory_library_memory PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -110,26 +106,25 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
-# Link deps once
-target_link_libraries(a_memory_library_memory PUBLIC)
+target_link_libraries(a_memory_library_memory PUBLIC
+)
 
-# Per-variant optimization flavor
 target_compile_options(a_memory_library_memory PRIVATE ${_A_DEBUG_OPTS})
 
-# Memory profiling macro on the memory variant (opt-in)
 if(A_BUILD_ENABLE_MEMORY_PROFILE)
   target_compile_definitions(a_memory_library_memory PUBLIC ${A_BUILD_MEMORY_DEFINE})
 endif()
 
-# Install this variant
 install(TARGETS a_memory_library_memory EXPORT a_memory_libraryTargets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
 add_library(a_memory_library_static STATIC
-  src/aml_alloc.c  src/aml_buffer.c  src/aml_pool.c)
+  src/aml_alloc.c
+  src/aml_buffer.c
+  src/aml_pool.c
+)
 
 target_include_directories(a_memory_library_static PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -149,23 +144,22 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
-# Link deps once
-target_link_libraries(a_memory_library_static PUBLIC)
+target_link_libraries(a_memory_library_static PUBLIC
+)
 
-# Per-variant optimization flavor
 target_compile_options(a_memory_library_static PRIVATE ${_A_RELEASE_OPTS})
 
-# Memory profiling macro on the memory variant (opt-in)
 
-# Install this variant
 install(TARGETS a_memory_library_static EXPORT a_memory_libraryTargets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
 add_library(a_memory_library_shared SHARED
-  src/aml_alloc.c  src/aml_buffer.c  src/aml_pool.c)
+  src/aml_alloc.c
+  src/aml_buffer.c
+  src/aml_pool.c
+)
 
 target_include_directories(a_memory_library_shared PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -185,32 +179,28 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
-# Link deps once
-target_link_libraries(a_memory_library_shared PUBLIC)
+target_link_libraries(a_memory_library_shared PUBLIC
+)
 
-# Per-variant optimization flavor
 target_compile_options(a_memory_library_shared PRIVATE ${_A_RELEASE_OPTS})
 
-# Memory profiling macro on the memory variant (opt-in)
 
-# Install this variant
 install(TARGETS a_memory_library_shared EXPORT a_memory_libraryTargets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-# In-tree umbrella alias picking one variant (for unified builds)
 string(REPLACE "-" "_" _variant_us "${A_BUILD_VARIANT}")
 set(_sel_tgt "a_memory_library_${_variant_us}")
 if(TARGET "${_sel_tgt}")
   add_library(a_memory_library::a_memory_library ALIAS ${_sel_tgt})
 endif()
 
+
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
-# Export all variant targets together
 install(EXPORT a_memory_libraryTargets
   FILE a_memory_libraryTargets.cmake
   NAMESPACE a_memory_library::
@@ -240,13 +230,15 @@ include("${CMAKE_CURRENT_LIST_DIR}/a_memory_libraryTargets.cmake")
 
 set(_ns "@A_BUILD_EXPORT_NAMESPACE@")
 set(_pkg "@A_BUILD_TARGET_BASENAME@")
+
+# ONLY run target modifications if the imported target doesn't exist yet!
 if(NOT TARGET ${_ns}::${_pkg})
   add_library(${_ns}::${_pkg} INTERFACE IMPORTED)
-endif()
 
-set(_pick ${_ns}::${_pkg}_${_picked_us})
-if(TARGET "${_pick}")
-  target_link_libraries(${_ns}::${_pkg} INTERFACE "${_pick}")
+  set(_pick ${_ns}::${_pkg}_${_picked_us})
+  if(TARGET "${_pick}")
+    target_link_libraries(${_ns}::${_pkg} INTERFACE "${_pick}")
+  endif()
 endif()
 ]=])
 
@@ -274,4 +266,6 @@ install(FILES
 
 
 enable_testing()
+
+# Dynamically mount all subprojects (apps, examples, tests, etc.)
 add_subdirectory(tests)
