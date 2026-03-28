@@ -8,7 +8,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(a_memory_library
-  VERSION 0.1.0
+  VERSION 0.0.2
   LANGUAGES C
 )
 # ── Variant selection for the umbrella alias ──────────────────────────────────
