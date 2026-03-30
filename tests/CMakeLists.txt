@@ -17,6 +17,7 @@ option(A_ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
 
 find_library(M_LIB m)
 
+find_package(the_macro_library CONFIG REQUIRED)
 
 # Fallback for standalone test builds (when not included via add_subdirectory)
 if(NOT TARGET a_memory_library::a_memory_library)
@@ -47,6 +48,7 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
+target_link_libraries(test_aml_alloc PRIVATE the_macro_library::the_macro_library)
 target_link_libraries(test_aml_alloc PRIVATE a_memory_library::a_memory_library)
 
 if(M_LIB)
@@ -91,6 +93,7 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
+target_link_libraries(test_aml_buffer PRIVATE the_macro_library::the_macro_library)
 target_link_libraries(test_aml_buffer PRIVATE a_memory_library::a_memory_library)
 
 if(M_LIB)
@@ -135,6 +138,7 @@ if("CXX" IN_LIST CMAKE_PROJECT_LANGUAGES)
   )
 endif()
 
+target_link_libraries(test_aml_pool PRIVATE the_macro_library::the_macro_library)
 target_link_libraries(test_aml_pool PRIVATE a_memory_library::a_memory_library)
 
 if(M_LIB)

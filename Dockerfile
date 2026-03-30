@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     wget \
+    abigail-tools \
     tar \
     unzip \
     zip \
@@ -31,6 +32,9 @@ RUN apt-get update && apt-get install -y \
     autoconf \
     automake \
     libtool \
+    python3 \
+    python3-venv \
+    python3-pip \
  && rm -rf /var/lib/apt/lists/*
 
 # --- Install CMake from official binaries (arch-aware) ------------------------
@@ -55,9 +59,19 @@ USER dev
 WORKDIR /workspace
 
 # --- Optional Python venv for tools ------------------------------------------
-RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --upgrade pip
+RUN sudo python3 -m venv /opt/venv && \
+    sudo chown -R dev:dev /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip
 ENV PATH="/opt/venv/bin:${PATH}"
 
+# --- Build & install the-macro-library ---
+RUN set -eux; \
+    git clone --depth 1 --single-branch "https://github.com/contactandyc/the-macro-library.git" "the-macro-library"; \
+    cd "the-macro-library"; \
+    ./build.sh clean && \
+    ./build.sh install; \
+    cd ..; \
+    rm -rf "the-macro-library"
 
 # --- Build & install this project --------------------------------------------
 COPY --chown=dev:dev . /workspace/a-memory-library

@@ -7,3 +7,7 @@ profile: default-knode
 base_templates:
   repo: https://github.com/contactandyc/scaffold-templates.git
   ref: main
+
+tests:
+  depends_on:
+    - https://github.com/contactandyc/the-macro-library.git
