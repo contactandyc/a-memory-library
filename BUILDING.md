@@ -1,7 +1,7 @@
 # BUILDING
 
 This project: **A Memory Library**
-Version: **0.1.0**
+Version: **0.1.1**
 
 ## Local build
 
@@ -28,7 +28,7 @@ sudo cmake --install .
 ### Development tooling (optional)
 
 ```bash
-sudo apt-get update && sudo apt-get install -y valgrind gdb perl autoconf automake libtool python3 python3-venv python3-pip
+sudo apt-get update && sudo apt-get install -y autoconf automake gdb libtool perl python3 python3-pip python3-venv valgrind
 ```
 
 
