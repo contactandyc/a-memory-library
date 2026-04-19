@@ -208,8 +208,8 @@ void *_aml_pool_alloc_grow(aml_pool_t *h, size_t len) {
   if (block_size < h->minimum_growth_size)
     block_size = h->minimum_growth_size;
   aml_pool_node_t *block;
-  if(len > 100*1024*1024)
-    printf("aml_pool_t: %p(%p): growing to %lu, %lu\n", h, h->pool, block_size, h->size);
+  // if(len > 100*1024*1024)
+  //  printf("aml_pool_t: %p(%p): growing to %lu, %lu\n", h, h->pool, block_size, h->size);
   if(!h->pool) {
 #ifdef _AML_USE_MALLOC_
     block = (aml_pool_node_t *)malloc(sizeof(aml_pool_node_t) + block_size);

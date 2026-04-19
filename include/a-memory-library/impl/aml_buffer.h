@@ -126,8 +126,8 @@ static inline char *aml_buffer_end(aml_buffer_t *h) {
 
 static inline void _aml_buffer_grow(aml_buffer_t *h, size_t length) {
   size_t len = (length + 50) + (h->size >> 3);
-  if(len > 100*1024*1024)
-    printf("aml_buffer_t: %p(%p): growing to %zu\n", (void*)h, (void*)h->pool, (size_t)len);
+  // if(len > 100*1024*1024)
+  //  printf("aml_buffer_t: %p(%p): growing to %zu\n", (void*)h, (void*)h->pool, (size_t)len);
   if (!h->pool) {
     char *data = (char *)aml_malloc(len + 1);
     memcpy(data, h->data, h->length + 1);
