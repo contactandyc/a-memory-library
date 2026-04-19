@@ -8,6 +8,7 @@
 #include "a-memory-library/aml_pool.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 // #ifndef _AML_USE_MALLOC_
 // #define _AML_USE_MALLOC_
@@ -705,4 +706,222 @@ unsigned char *aml_pool_base64_decode(aml_pool_t *pool, size_t *out_len, const c
         *out_len = decoded_len;
     }
     return decoded;
+}
+
+// =============================================================================
+// INTERNAL DELIMITED ESCAPE CORE
+// =============================================================================
+static char *_aml_pool_escape_delim_field(aml_pool_t *pool, const char *field, char delim) {
+    if (!field || field[0] == '\0') {
+        return "";
+    }
+
+    bool needs_quotes = false;
+    size_t quote_count = 0;
+    size_t orig_len = 0;
+
+    for (const char *p = field; *p; p++) {
+        if (*p == delim || *p == '"' || *p == '\n' || *p == '\r') {
+            needs_quotes = true;
+        }
+        if (*p == '"') quote_count++;
+        orig_len++;
+    }
+
+    if (!needs_quotes) {
+        return (char *)field; // Fast path: return original pointer
+    }
+
+    // Slow path: allocate escaped string
+    size_t escaped_len = orig_len + 2 + quote_count + 1;
+    char *escaped = (char *)aml_pool_ualloc(pool, escaped_len);
+    char *wp = escaped;
+
+    *wp++ = '"';
+    for (const char *p = field; *p; p++) {
+        if (*p == '"') *wp++ = '"';
+        *wp++ = *p;
+    }
+    *wp++ = '"';
+    *wp = '\0';
+
+    return escaped;
+}
+
+// =============================================================================
+// PUBLIC API WRAPPERS
+// =============================================================================
+char *aml_pool_escape_csv(aml_pool_t *pool, const char *field) {
+    return _aml_pool_escape_delim_field(pool, field, ',');
+}
+
+char *aml_pool_escape_tsv(aml_pool_t *pool, const char *field) {
+    return _aml_pool_escape_delim_field(pool, field, '\t');
+}
+
+char *aml_pool_escape_csvf(aml_pool_t *pool, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char *formatted_str = aml_pool_strdupvf(pool, fmt, args);
+    va_end(args);
+
+    return _aml_pool_escape_delim_field(pool, formatted_str, ',');
+}
+
+char *aml_pool_escape_tsvf(aml_pool_t *pool, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char *formatted_str = aml_pool_strdupvf(pool, fmt, args);
+    va_end(args);
+
+    return _aml_pool_escape_delim_field(pool, formatted_str, '\t');
+}
+
+// =============================================================================
+// INTERNAL DELIMITED PARSING CORES
+// =============================================================================
+
+static char **_aml_pool_split_delim(aml_pool_t *h, size_t *num_splits, const char *s, char delim) {
+    if (!s) {
+        if (num_splits) *num_splits = 0;
+        static char *nil = NULL;
+        return &nil;
+    }
+
+    size_t count = 1;
+    bool in_quotes = false;
+    for (const char *c = s; *c; ++c) {
+        if (*c == '"') {
+            in_quotes = !in_quotes;
+        } else if (*c == delim && !in_quotes) {
+            count++;
+        }
+    }
+
+    char **result = (char **)aml_pool_alloc(h, sizeof(char *) * (count + 1));
+    size_t slen = strlen(s);
+    char *buffer = (char *)aml_pool_ualloc(h, slen + 1);
+
+    size_t idx = 0;
+    const char *read_ptr = s;
+    char *write_ptr = buffer;
+
+    result[idx++] = write_ptr;
+    in_quotes = false;
+
+    while (*read_ptr) {
+        if (*read_ptr == '"') {
+            if (in_quotes && *(read_ptr + 1) == '"') {
+                *write_ptr++ = '"';
+                read_ptr += 2;
+            } else {
+                in_quotes = !in_quotes;
+                read_ptr++;
+            }
+        } else if (*read_ptr == delim && !in_quotes) {
+            *write_ptr++ = '\0';
+            result[idx++] = write_ptr;
+            read_ptr++;
+        } else {
+            *write_ptr++ = *read_ptr++;
+        }
+    }
+
+    *write_ptr = '\0';
+    result[idx] = NULL;
+
+    if (num_splits) *num_splits = idx;
+    return result;
+}
+
+static char *_aml_pool_join_delim(aml_pool_t *pool, char **fields, size_t num_fields, char delim) {
+    if (!fields || num_fields == 0) {
+        char *empty = (char *)aml_pool_alloc(pool, 1);
+        empty[0] = '\0';
+        return empty;
+    }
+
+    size_t total_len = 0;
+
+    for (size_t i = 0; i < num_fields; i++) {
+        const char *field = fields[i];
+        if (!field || field[0] == '\0') continue;
+
+        bool needs_quotes = false;
+        size_t quote_count = 0;
+        size_t field_len = 0;
+
+        for (const char *p = field; *p; p++) {
+            if (*p == delim || *p == '"' || *p == '\n' || *p == '\r') {
+                needs_quotes = true;
+            }
+            if (*p == '"') quote_count++;
+            field_len++;
+        }
+
+        if (needs_quotes) {
+            total_len += field_len + quote_count + 2;
+        } else {
+            total_len += field_len;
+        }
+    }
+
+    total_len += (num_fields - 1);
+
+    char *result = (char *)aml_pool_ualloc(pool, total_len + 1);
+    char *wp = result;
+
+    for (size_t i = 0; i < num_fields; i++) {
+        const char *field = fields[i];
+
+        if (field && field[0] != '\0') {
+            bool needs_quotes = false;
+            for (const char *p = field; *p; p++) {
+                if (*p == delim || *p == '"' || *p == '\n' || *p == '\r') {
+                    needs_quotes = true;
+                    break;
+                }
+            }
+
+            if (needs_quotes) {
+                *wp++ = '"';
+                for (const char *p = field; *p; p++) {
+                    if (*p == '"') *wp++ = '"';
+                    *wp++ = *p;
+                }
+                *wp++ = '"';
+            } else {
+                for (const char *p = field; *p; p++) {
+                    *wp++ = *p;
+                }
+            }
+        }
+
+        if (i < num_fields - 1) {
+            *wp++ = delim;
+        }
+    }
+
+    *wp = '\0';
+    return result;
+}
+
+// =============================================================================
+// PUBLIC API WRAPPERS
+// =============================================================================
+
+char **aml_pool_split_csv(aml_pool_t *pool, size_t *num_splits, const char *s) {
+    return _aml_pool_split_delim(pool, num_splits, s, ',');
+}
+
+char **aml_pool_split_tsv(aml_pool_t *pool, size_t *num_splits, const char *s) {
+    return _aml_pool_split_delim(pool, num_splits, s, '\t');
+}
+
+char *aml_pool_join_csv(aml_pool_t *pool, char **fields, size_t num_fields) {
+    return _aml_pool_join_delim(pool, fields, num_fields, ',');
+}
+
+char *aml_pool_join_tsv(aml_pool_t *pool, char **fields, size_t num_fields) {
+    return _aml_pool_join_delim(pool, fields, num_fields, '\t');
 }

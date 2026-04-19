@@ -205,6 +205,45 @@ char *aml_pool_base64_encode(aml_pool_t *pool, const unsigned char *data, size_t
    out_len. */
 unsigned char *aml_pool_base64_decode(aml_pool_t *pool, size_t *out_len, const char *b64);
 
+/* aml_pool_escape_csv_field takes a single raw string and returns it safely
+   escaped for CSV (comma-delimited). If no escaping is needed, it returns a
+   pointer to the original string to save memory. */
+char *aml_pool_escape_csv(aml_pool_t *pool, const char *field);
+
+/* aml_pool_escape_csvf formats a string using printf-style arguments, and
+   returns it safely escaped for CSV (comma-delimited). The resulting string
+   is allocated in the pool. */
+char *aml_pool_escape_csvf(aml_pool_t *pool, const char *fmt, ...);
+
+/* aml_pool_escape_tsv_field takes a single raw string and returns it safely
+   escaped for TSV (tab-delimited). If no escaping is needed, it returns a
+   pointer to the original string to save memory. */
+char *aml_pool_escape_tsv(aml_pool_t *pool, const char *field);
+
+/* aml_pool_escape_tsvf formats a string using printf-style arguments, and
+   returns it safely escaped for TSV (tab-delimited). The resulting string
+   is allocated in the pool. */
+char *aml_pool_escape_tsvf(aml_pool_t *pool, const char *fmt, ...);
+
+/* aml_pool_split_csv parses a comma-separated string into an array of strings.
+   The number of fields parsed will be returned in num_splits.  The array and
+   the parsed strings are allocated in the pool. */
+char **aml_pool_split_csv(aml_pool_t *pool, size_t *num_splits, const char *s);
+
+/* aml_pool_split_tsv parses a tab-separated string into an array of strings.
+   The number of fields parsed will be returned in num_splits.  The array and
+   the parsed strings are allocated in the pool. */
+char **aml_pool_split_tsv(aml_pool_t *pool, size_t *num_splits, const char *s);
+
+/* aml_pool_join_csv takes an array of strings and joins them into a single
+   comma-separated line.  The resulting string is allocated in the pool and
+   is null-terminated.  It does not add a trailing newline. */
+char *aml_pool_join_csv(aml_pool_t *pool, char **fields, size_t num_fields);
+
+/* aml_pool_join_tsv takes an array of strings and joins them into a single
+   tab-separated line.  The resulting string is allocated in the pool and
+   is null-terminated.  It does not add a trailing newline. */
+char *aml_pool_join_tsv(aml_pool_t *pool, char **fields, size_t num_fields);
 #include "a-memory-library/impl/aml_pool.h"
 
 #ifdef __cplusplus
