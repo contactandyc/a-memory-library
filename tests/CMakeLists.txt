@@ -11,6 +11,7 @@ project(a_memory_library_tests LANGUAGES C)
 
 if(CMAKE_PREFIX_PATH)
   include_directories("${CMAKE_PREFIX_PATH}/include")
+  link_directories("${CMAKE_PREFIX_PATH}/lib")
 endif()
 
 set(A_BUILD_VARIANT "debug" CACHE STRING
