@@ -33,6 +33,7 @@ void aml_pool_set_minimum_growth_size(aml_pool_t *h, size_t size) {
 
 #ifdef _AML_DEBUG_
 static void dump_pool(FILE *out, const char *caller, void *p, size_t length) {
+  (void)length;
   aml_pool_t *pool = (aml_pool_t *)p;
   size_t max_used = aml_pool_max_used(pool);
   fprintf(out, "%s size: %lu, max_used: %lu, initial_size: %lu used: %lu ",
@@ -244,7 +245,7 @@ char *aml_pool_strdupvf(aml_pool_t *pool, const char *fmt, va_list args) {
   if (n < 0)
     abort();
   va_end(args_copy);
-  if (n < leftover) {
+  if ((size_t)n < leftover) {
     pool->curp += n + 1;
 #ifdef _AML_DEBUG_
     pool->cur_size += (n + 1);

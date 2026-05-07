@@ -12,6 +12,7 @@
 
 #ifdef _AML_DEBUG_
 static void dump_buffer(FILE *out, const char *caller, void *p, size_t length) {
+  (void)length;
   aml_buffer_t *bh = (aml_buffer_t *)p;
   fprintf(out, "%s size: %lu, max_length: %lu, initial_size: %lu ", caller,
           bh->size, bh->max_length, bh->initial_size);
@@ -58,7 +59,7 @@ void aml_buffer_appendvf(aml_buffer_t *h, const char *fmt, va_list args) {
   if (n < 0)
     abort();
   va_end(args_copy);
-  if (n < leftover)
+  if ((size_t)n < leftover)
     h->length += n;
   else {
     _aml_buffer_grow(h, h->length + n);

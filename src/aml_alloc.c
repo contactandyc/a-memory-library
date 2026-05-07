@@ -78,7 +78,7 @@ void _aml_dump(FILE *out) {
 
 void save_old_log(aml_allocator_t *a, size_t saves, char *tmp) {
   int num = 0;
-  int s = saves;
+  // int s = saves;
   for (int i = 32; i > 0; i--) {
     uint32_t ix = i - 1;
     uint32_t v = 1 << ix;
