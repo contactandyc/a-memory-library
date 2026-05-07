@@ -201,8 +201,8 @@ void *_aml_malloc_d(const char *caller, size_t len, bool custom) {
   if (!len)
     return NULL;
 
-    if(len > 24*1024*1024)
-        printf("allocating %lu bytes\n", len);
+    // if(len > 24*1024*1024)
+    //    printf("allocating %lu bytes\n", len);
 
   aml_allocator_t *a = global_allocator;
 
