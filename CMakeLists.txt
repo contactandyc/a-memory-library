@@ -8,12 +8,13 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(a_memory_library
-  VERSION 0.1.7
+  VERSION 0.1.8
   LANGUAGES C
 )
 
 if(CMAKE_PREFIX_PATH)
   include_directories("${CMAKE_PREFIX_PATH}/include")
+  link_directories("${CMAKE_PREFIX_PATH}/lib")
 endif()
 # ── Variant selection for the umbrella alias ──────────────────────────────────
 set(A_BUILD_VARIANT "debug" CACHE STRING
