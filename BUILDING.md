@@ -1,7 +1,7 @@
 # BUILDING
 
 This project: **A Memory Library**
-Version: **0.1.11**
+Version: **0.1.12**
 
 ## Local build
 
